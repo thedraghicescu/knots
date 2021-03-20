@@ -1,0 +1,235 @@
+const {isValidKey, findObjectFromPath} =require('./utils.js')
+var EventEmitter = require('events');
+//create a proxy that allows nodes to be used as properties ex: root[lvl_1][lvl_2]
+const generateKnotIndexer = function(context){
+    return new Proxy(context, {
+        get(target, prop) {
+            //return own property
+            if (prop in target)  return target[prop];
+            
+            if(!target.hasKnots || typeof prop !== "string") return null;
+             
+            //it's a namespace 'a.b.c'
+            if(prop.indexOf(".") > -1){
+                let current = context;
+                const path = prop.split('.');
+                //drill down on each part of the path to find the correct node
+                for (const part of path) {
+                    if(!current || !current.hasKnots || !current.hasKnot(part)) return null;
+                    current = current.knots.get(part);
+                }
+
+                return current;
+            }
+
+            return context.hasKnot(prop) ? context.knots.get(prop) : null;
+
+        }
+    });
+}
+const defaults = {
+    eventful : false,
+    stateful : false,
+    cachable : false
+}
+
+class Knot{
+    constructor(key,options){
+        if (!isValidKey(key)) 
+        throw new Error(
+            `A knot must have a 'KEY' property either a non-empty string or  a number > 0. \n
+            Instead got:'${key}'`
+        );
+
+        
+        this.__privateKey = {value:key};
+        Object.freeze(this.__privateKey);
+        
+        this.__privateParent= { value : null };
+        
+        this.knots = new Map();
+
+        let config = {...defaults,...options};
+        if(config.eventful){
+           
+            this.__privateEmitter = new EventEmitter();
+        }
+        if(config.stateful){
+            this.__privateState ={}
+        }
+        //if serve as root we need to create eventhandlers
+        
+        return generateKnotIndexer(this)
+
+    }
+    get KEY(){
+        return this.__privateKey.value;
+    }
+
+    get hasKnots(){
+        return this.knots.size > 0;
+    }
+    hasKnot(key){
+        return this.hasKnots && this.knots.has(key)
+    }
+
+    get isRoot(){
+        return !this.parent;
+    }
+
+    get parent(){
+        return this.__privateParent.value;
+    }
+
+    set parent(knot){
+        if (!!this.parent) 
+        throw  new Error("Parent already set! Avoid setting parent yourself, this is done internally when new knots are added");
+        
+        this.__privateParent.value=knot;
+        Object.freeze (this.__privateParent);
+        
+    }
+    get children(){
+        return Array.from(this.knots.values());
+    }
+
+    get events(){
+        return this.__privateEmitter;
+    }
+
+    tie(knot){
+        if(!knot || !(knot instanceof Knot))
+        throw new Error(
+            `Invalid knot type! This must be an instance of Knot! \n
+            Instead got:${typeof knot}`
+        );
+
+        if( this.hasKnot(knot.KEY)) 
+        throw new Error(`A knot with this key('${knot.KEY}') already exists!`)
+
+        knot.parent = this;
+        this.knots.set(knot.KEY, knot)
+
+        const emiter = this.findRoot().__privateEmitter;
+        if(!!emiter) emiter.emit("knot_tied",knot)
+        
+    }
+    //remove current node from parent's nodes
+    //do not throw errors
+    untie(){
+        if(this.isRoot) throw new Error ("Can't use pop on a root knot!")
+        
+        const emiter = this.findRoot().__privateEmitter;
+        if(!!emiter) emiter.emit("knot_untied",this)
+          
+
+        this.parent.knots.delete(this.KEY)
+    }
+    untieAll(){
+        const emiter = this.findRoot().__privateEmitter;
+        if(!!emiter)emiter.emit("all_knots_untied",this.getPath())
+        this.knots.clear()
+    }
+    
+    findRoot(){
+        
+        if(this.isRoot) return this;
+        return this.parent.findRoot()
+    }
+
+    getPath(){
+        let current = this;
+        let stack = [current.KEY];
+
+        if(this.isRoot) return stack;
+
+        while(true){
+            current = current.parent;
+            stack.push(current.KEY)
+            if(current.isRoot) break;
+        }
+        
+        return stack.reverse();
+    }
+    getNamespace(){
+        let stack = this.getPath()
+        if(stack.length<2) return stack[0];
+        return stack.join('.');
+    }
+
+    //recursive function to create on object tree from knot
+    toObject(childrenOnly=false){
+        //check if it's the first time running the function
+        let firstCall = arguments.length < 2;
+        //get the refference to the previous namespace or create a new one
+        let prevNamespace = firstCall? {} :  arguments[1];
+        //create a referrence to the nextNamesace object will be injected into
+        let nextNamespace = prevNamespace; 
+            //excluding self returns a list of knots
+        if(!childrenOnly){
+                // the children will be injected into this instead of prevoius
+                nextNamespace[this.KEY] ={}
+                nextNamespace = prevNamespace[this.KEY]
+            }
+        //inject properties picked by the class that extends this class
+        this.injectObject(nextNamespace)
+        
+        
+        this.knots.forEach(knot => {
+            //create a an empty object literal for each children
+            nextNamespace[knot.KEY]={}
+            //recursive call to each knot, forced to use children only because we created the NS above
+            //inject the result back into this knot's namespace
+            nextNamespace[knot.KEY] =knot.toObject(true,nextNamespace[knot.KEY])
+      
+        });
+        
+        return prevNamespace;
+
+    }
+    //this will be called when contruction toObject
+    //you cand add your own properties to the currentNamespace
+    injectObject(currentNS){
+       //ex: currentNS.name = this.someProp
+    }
+    drill(callback,childrenOnly=false){
+        let current = arguments.length > 2 ? arguments[2]  : this;
+        if(!childrenOnly) callback(current);
+        current.knots.forEach((knot)=>{
+            this.drill(callback,false,knot)
+        })
+    }
+    get hasSiblings(){
+        if(this.isRoot) return false;
+        return (this.parent.knots.size>1)
+    }
+    siblings(){
+        if (!this.hasSiblings) return []
+        return this.parent.children.filter(knot=> knot.KEY!==this.KEY)
+    }
+   
+    json(fullTree=false,indentation=null){
+       if(!fullTree) return JSON.stringify(this, function(key, val) {
+           //exclude private members
+            if (!key.startsWith("__")) return val;
+        }, indentation );
+
+        return JSON.stringify(this, function(key, val) {
+            if(val instanceof Map) {
+                //convert map to array
+                return  Array.from(val.entries())
+              } else {
+                if (!key.startsWith("__")) return val;
+              }
+            
+        }, indentation );
+    }
+    
+    
+
+
+    
+    
+}
+module.exports = Knot;
+
