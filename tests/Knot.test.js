@@ -106,6 +106,8 @@ describe("knot CLASS",()=>{
 			root["kid1"].tie(new Knot("friend2"))
 			root["kid2"].tie(new Knot("friend1"))
 			root["kid1"]["friend2"].tie(new Knot("friend2kid"))
+			root.kid2.tie(new Knot(1));
+			
 		})
 		
         it("should return null if the key is not found",()=>{
@@ -131,6 +133,13 @@ describe("knot CLASS",()=>{
 
 		it("should get correct knot when starting from another level",()=>{
 			expect(root["kid1"]['friend2.friend2kid']).toHaveProperty('KEY','friend2kid')
+		})
+
+		it("should work with number keys",()=>{
+			expect(root["kid2"].hasKnot(1)).toBe(true)
+			expect(root["kid2"][1]).not.toBeNull();
+			expect(root["kid2"][1]).toHaveProperty("KEY",1)
+			expect(root["kid2.1"]).toHaveProperty("KEY",1)
 		})
 		
 		
@@ -186,6 +195,8 @@ describe("knot CLASS",()=>{
 			root.tie(new Knot("lvl1"))
 			root.tie(new Knot("lvl2"))
 			root["lvl1"].tie(new Knot("lvl1-1"))
+			root.lvl2.tie(new Knot(2));
+			
 		})
 
 		it("should return the root's key when called from root" ,()=>{
@@ -194,6 +205,10 @@ describe("knot CLASS",()=>{
 		it("should return the correct namespace when called from child knot",()=>{
 			let kid = root["lvl1.lvl1-1"];
 			expect(kid.getNamespace()).toBe('root.lvl1.lvl1-1')
+		})
+		it("should return the correct namespace even with integer keys",()=>{
+			expect(root["lvl2.2"]).not.toBeNull()
+			expect(root["lvl2.2"].getNamespace()).toBe("root.lvl2.2")
 		})
 	})
 
@@ -306,7 +321,7 @@ describe("knot CLASS",()=>{
 		it("should return false if called from root",()=>{
 			expect(root.hasSiblings).toBe(false)
 		})
-		it("should return truechildren should have siblings",()=>{
+		it("should return true when called from children and parent has more then 1 knots",()=>{
 			expect(root["lvl1"].hasSiblings).toBe(true)
 		})
 		test("should return false if child knot does not have siblings",()=>{
@@ -342,7 +357,7 @@ describe("knot CLASS",()=>{
 
 	})
 
-	describe("hasknot",()=>{
+	describe("hasKnot",()=>{
 		let root;
 		beforeEach(()=>{
 			root = new Knot("root");

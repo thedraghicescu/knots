@@ -1,5 +1,10 @@
 const { isValidKey, findObjectFromPath } = require("./utils.js");
 var EventEmitter = require("events");
+
+const isInteger = function (str) {
+  return !isNaN(str) && !isNaN(parseInt(str));
+};
+
 //create a proxy that allows knots to be used as properties ex: root[lvl_1][lvl_2]
 const generateKnotIndexer = function (context) {
   return new Proxy(context, {
@@ -7,23 +12,26 @@ const generateKnotIndexer = function (context) {
       //return own property
       if (prop in target) return target[prop];
 
-      if (!target.hasKnots || typeof prop !== "string") return null;
+      if (!target.knots.size > 0) return null;
+
+      const propKey = isInteger(prop) ? parseInt(prop) : prop;
 
       //it's a namespace 'a.b.c'
-      if (prop.indexOf(".") > -1) {
+      if (typeof propKey === "string" && propKey.indexOf(".") > -1) {
         let current = context;
-        const path = prop.split(".");
+        const path = propKey.split(".");
         //drill down on each part of the path to find the correct knot
         for (const part of path) {
-          if (!current || !current.hasKnots || !current.hasKnot(part))
-            return null;
-          current = current.knots.get(part);
+          if (!current || !current.knots.size > 0) return null;
+          const partKey = isInteger(part) ? parseInt(part) : part;
+          if (!current.knots.has(partKey)) return null;
+          current = current.knots.get(partKey);
         }
 
         return current;
       }
 
-      return context.hasKnot(prop) ? context.knots.get(prop) : null;
+      return context.knots.has(propKey) ? context.knots.get(propKey) : null;
     },
   });
 };
@@ -68,7 +76,9 @@ class Knot {
     return this.knots.size > 0;
   }
   hasKnot(key) {
-    return this.hasKnots && this.knots.has(key);
+	  if(!this.hasKnots) return false;
+	  const realKey = isInteger(key) ? parseInt(key):key;
+    return  this.knots.has(realKey);
   }
 
   get isRoot() {
