@@ -1,19 +1,17 @@
-const isValidKeyString = function(key){
-    return (
+const isValidKey = function(key){
+    if(key==null) return false;
+    
+    const isValidKeyString =  (
         typeof key === "string" 
         && key.trim().length > 0   //must not be empty
         && key.indexOf('.')  < 0   //must not contain '.' because it's used as namespace
     );
-}
-const isValidKeyNumber = function(key){
-    return (
+
+    const isValidKeyNumber =(
         Number.isSafeInteger(key) 
         && ( key > 0 || 1 / key === Number.POSITIVE_INFINITY) // bigger than negative zero
     )
-}
-const isValidKey = function(key){
-    if(key==null) return false;
-    return  isValidKeyNumber(key) || isValidKeyString(key)
+    return  isValidKeyNumber || isValidKeyString
     
 }
 
