@@ -152,14 +152,17 @@ class Knot {
             Instead got:${typeof knot}`
       );
 
-    if (this.hasKnot(knot.KEY))
-      throw new Error(`A knot with this key('${knot.KEY}') already exists!`);
+    const knotKey = knot.KEY
 
+    if (this.hasKnot(knotKey))
+      throw new Error(`A knot with this key('${knotKey}') already exists!`);
+
+    
     knot.parent = this;
-    this.knots.set(knot.KEY, knot);
+    this.knots.set(knotKey, knot);
 
     const emiter = this.findRoot().__privateEmitter;
-    if (!!emiter) emiter.emit("knot_tied", knot);
+    if (!!emiter) emiter.emit("knot_tied", this.knots.get(knotKey));
   }
   
   replace(knot){
