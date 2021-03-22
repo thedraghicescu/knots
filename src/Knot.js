@@ -33,30 +33,26 @@ const generateKnotIndexer = function (context) {
 
       return context.knots.has(propKey) ? context.knots.get(propKey) : null;
     },
+
     set(target,prop,value){
-      if (prop in target && prop!=="value" && prop!=="state")  {
+      if (prop in target && prop!=="value")  {
         target[prop] = value;
         return true;
       }
       
-      if(target.hasOwnProperty("value") ){
-        //console.log("we can set:" + prop + " to " + value)
+      if(target.isValuable ){
         const cached = target.value;
         target[prop] = value;
         if(cached!==value){
           const stateRoot = target.findStateRoot()
-          const stateEmitter = stateRoot !=null ? stateRoot.__privateEmitter :null;
+          const stateEmitter = stateRoot != null ? stateRoot.__privateEmitter : null;
           if(!!stateEmitter) stateEmitter.emit("value_updated", target,cached);
 
           const rootEmitter = target.findRoot().__privateEmitter;
           if (!!rootEmitter) rootEmitter.emit("value_updated", target,cached);
         }
       }
-
-      if(target.hasOwnProperty("__stateful")){
-        console.log("replacing state")
-      }
-      
+    
       return true;
     }
   });
@@ -65,7 +61,6 @@ const generateKnotIndexer = function (context) {
 const defaults = {
   eventful: false,
   stateful: false,
-  cachable: false,
   valuable:false
 };
 
@@ -210,18 +205,18 @@ class Knot {
     if (!!rootEmiter)  rootEmiter.emit(evtName, mappedKnot);
   }
   //remove current knot from parent's knots
-  //do not throw errors
+  
   cut() {
     if (this.isRoot) throw new Error("Can't use pop on a root knot!");
 
     const emiter = this.findRoot().__privateEmitter;
-    if (!!emiter) emiter.emit("knot_untied", this);
+    if (!!emiter) emiter.emit("knot_cut", this);
 
     this.parent.knots.delete(this.KEY);
   }
   cutAll() {
     const emiter = this.findRoot().__privateEmitter;
-    if (!!emiter) emiter.emit("all_knots_untied", this.getPath());
+    if (!!emiter) emiter.emit("knots_cut", this.getPath());
     this.knots.clear();
   }
 
@@ -230,11 +225,11 @@ class Knot {
     return this.parent.findRoot();
   }
   findStateRoot(){
-    if(this.__stateful) return this;
+    if(this.isStateful) return this;
     if(this.parent!=null) return this.parent.findStateRoot();
     return null;
   }
-
+ 
   getPath() {
     let current = this;
     let stack = [current.KEY];
