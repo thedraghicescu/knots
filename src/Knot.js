@@ -230,18 +230,6 @@ class Knot {
     return null;
   }
 
-  __findRootEmmiter(){
-    const root = this.findRoot();
-    return root.isEventful ? root.__privateEmitter : null;
-  }
-
-  __findStateRootEmitter(){
-    const stateRoot  = this.findStateRoot();
-    if(!stateRoot || !stateRoot.isEventful) return null;
-
-    return stateRoot.__privateEmitter;
-  }
- 
   getPath() {
     let current = this;
     let stack = [current.KEY];

@@ -483,4 +483,6 @@ describe("knot CLASS",()=>{
 			expect(root.children.length).toBe(0)
 		})
 	})
+	
+	
 })
