@@ -34,7 +34,7 @@ const generateKnotIndexer = function (context) {
       return context.knots.has(propKey) ? context.knots.get(propKey) : null;
     },
     set(target,prop,value){
-      if (prop in target && prop!=="value")  {
+      if (prop in target && prop!=="value" && prop!=="state")  {
         target[prop] = value;
         return true;
       }
@@ -44,14 +44,17 @@ const generateKnotIndexer = function (context) {
         const cached = target.value;
         target[prop] = value;
         if(cached!==value){
-          const stateEmitter = target.findStateRoot().__privateEmitter;
+          const stateRoot = target.findStateRoot()
+          const stateEmitter = stateRoot !=null ? stateRoot.__privateEmitter :null;
           if(!!stateEmitter) stateEmitter.emit("value_updated", target,cached);
 
           const rootEmitter = target.findRoot().__privateEmitter;
           if (!!rootEmitter) rootEmitter.emit("value_updated", target,cached);
         }
-        
-        
+      }
+
+      if(target.hasOwnProperty("__stateful")){
+        console.log("replacing state")
       }
       
       return true;
@@ -132,6 +135,15 @@ class Knot {
   get events() {
     return this.__privateEmitter;
   }
+  get isStateful(){
+    return this.hasOwnProperty("__stateful")
+  }
+  get isEventful(){
+    return this.events!=null;
+  }
+  get isValuable(){
+    return this.hasOwnProperty("value");
+  }
 
   tie(knot) {
     if (!knot || !(knot instanceof Knot))
@@ -148,6 +160,29 @@ class Knot {
 
     const emiter = this.findRoot().__privateEmitter;
     if (!!emiter) emiter.emit("knot_tied", knot);
+  }
+  
+  replace(knot){
+    if (!knot || !(knot instanceof Knot))
+    throw new Error(
+      `Invalid knot type! This must be an instance of Knot! \n
+          Instead got:${typeof knot}`
+    );
+
+    if (!this.hasKnot(knot.KEY))
+    throw new Error(`A knot with this key('${knot.KEY}') doesn't exist!`);
+    
+    const isStateful = knot.isStateful;
+    const EVT_NAME = isStateful ? "state_replaced" : "knot_replaced";
+    if(isStateful && knot.isEventful){
+
+    }
+    
+
+    knot.parent=this;
+    this.knots.set(knot.KEY, knot);
+    const emiter = this.findRoot().__privateEmitter;
+    if (!!emiter) emiter.emit(EVT_NAME, knot);
   }
   //remove current knot from parent's knots
   //do not throw errors
