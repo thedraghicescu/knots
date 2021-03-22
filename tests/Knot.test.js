@@ -473,4 +473,14 @@ describe("knot CLASS",()=>{
 
 		
 	})
+	describe("cutAll",()=>{
+		it("should clear all child knots",()=>{
+			const root = new Knot("root");
+			root.tie(new Knot("a"))
+			root.tie(new Knot("b"))
+			expect(root.children.length).toBe(2)
+			root.cutAll();
+			expect(root.children.length).toBe(0)
+		})
+	})
 })
