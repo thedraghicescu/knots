@@ -463,4 +463,14 @@ describe("knot CLASS",()=>{
 			expect(root.isValuable).toBe(true);
 		})
 	})
+
+	describe("replace",()=>{
+		let root;
+		beforeEach(()=>{
+			root = new Knot("root");
+			root.tie(new Knot("_state",{stateful:true}))
+		});
+		
+		
+	})
 })
