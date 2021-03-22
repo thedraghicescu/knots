@@ -433,4 +433,34 @@ describe("knot CLASS",()=>{
 			expect(root.lvl2.name2.findStateRoot()).toBeNull()
 		})
 	})
+	describe("isStateful",()=>{
+		it("should return false when it's not contructed with stateful option",()=>{
+			const root= new Knot("root");
+			expect(root.isStateful).toBe(false)
+		})
+		it("should return true when it's contructed with stateful option",()=>{
+			const root= new Knot("root",{stateful:true});
+			expect(root.isStateful).toBe(true);
+		})
+	})
+	describe("isEventful",()=>{
+		it("should return false when it's not contructed with eventful option",()=>{
+			const root= new Knot("root");
+			expect(root.isEventful).toBe(false)
+		})
+		it("should return true when it's contructed with eventful option",()=>{
+			const root= new Knot("root",{eventful:true});
+			expect(root.isEventful).toBe(true);
+		})
+	})
+	describe("isValuable",()=>{
+		it("should return false when it's not contructed with valuable option",()=>{
+			const root= new Knot("root");
+			expect(root.isValuable).toBe(false)
+		})
+		it("should return true when it's contructed with valuable option",()=>{
+			const root= new Knot("root",{valuable:true});
+			expect(root.isValuable).toBe(true);
+		})
+	})
 })
