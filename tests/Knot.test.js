@@ -72,21 +72,21 @@ describe("knot CLASS",()=>{
 			root["kid2"].tie(new Knot("friend1"))
 		})
         it("should throw an error when called on root",()=>{
-			expect(()=> root.untie()).toThrow(/root/)
+			expect(()=> root.cut()).toThrow(/root/)
         })
 		it("should decrease knots size",()=>{
 			expect(root.knots.size).toBe(3);
-			root["kid2"].unTie();
+			root["kid2"].cut();
 			expect(root.knots.size).toBe(2);
 		})
 		it("should remove the corect knot from map",()=>{
-			root["kid3"].unTie();
+			root["kid3"].cut();
 			expect(root["kid3"]).toBeNull();
 			expect(root["kid1"]).not.toBeNull();
 			expect(root["kid2"]).not.toBeNull();
 		})
 		it("should remove the corect knot from nested map",()=>{
-			root["kid2"]["friend1"].unTie();
+			root["kid2"]["friend1"].cut();
 			expect(root["kid2"]).not.toBeNull();
 			expect(root["kid2"]["friend1"]).toBeNull();
 			expect(root["kid1"]).not.toBeNull();
@@ -114,7 +114,7 @@ describe("knot CLASS",()=>{
 			expect(root["missingKey"]).toBeNull();
         })
 		it("should return the correct knot even if popped another",()=>{
-			root["kid1"].unTie();
+			root["kid1"].cut();
 			expect(root["kid2"]).not.toBeNull();
 		})
 
@@ -470,7 +470,7 @@ describe("knot CLASS",()=>{
 			root = new Knot("root");
 			root.tie(new Knot("_state",{stateful:true}))
 		});
-		
+
 		
 	})
 })

@@ -211,7 +211,7 @@ class Knot {
   }
   //remove current knot from parent's knots
   //do not throw errors
-  unTie() {
+  cut() {
     if (this.isRoot) throw new Error("Can't use pop on a root knot!");
 
     const emiter = this.findRoot().__privateEmitter;
