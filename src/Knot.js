@@ -92,7 +92,7 @@ class Knot {
       this.__stateful = true;
     }
     if(config.valuable){
-      this.value = null;
+      this.value = config.value!=null ? config.value : null;
     }
     //if serve as root we need to create eventhandlers
 
@@ -169,20 +169,42 @@ class Knot {
           Instead got:${typeof knot}`
     );
 
-    if (!this.hasKnot(knot.KEY))
-    throw new Error(`A knot with this key('${knot.KEY}') doesn't exist!`);
+    const knotKey = knot.KEY;
+
+    if (!this.hasKnot(knotKey))
+    throw new Error(`A knot with this key('${knotKey}') doesn't exist!`);
+
     
+    
+    //copy its event emitter or else we would loose the subscribers
+    const previousKnot = this.knots.get(knotKey);
+    if(previousKnot.isEventful)
+    knot.__privateEmitter = previousKnot.__privateEmitter;
+
     const isStateful = knot.isStateful;
-    const EVT_NAME = isStateful ? "state_replaced" : "knot_replaced";
-    if(isStateful && knot.isEventful){
+    const isEventful = knot.isEventful;
+    const isBoth = (isStateful && isEventful)
 
-    }
-    
+    let evtNamePrefix = isStateful ? "state_" : "knot_";
 
+    //fire pre replacing event
+    if(isBoth) knot.__privateEmitter.emit(evtNamePrefix + "replacing" , knot)
+
+    //replace the knot inside the map
     knot.parent=this;
-    this.knots.set(knot.KEY, knot);
-    const emiter = this.findRoot().__privateEmitter;
-    if (!!emiter) emiter.emit(EVT_NAME, knot);
+    this.knots.set(knotKey, knot);
+
+    // get the one from the map to allow GC
+    const mappedKnot = this.knots.get(knotKey);
+
+    const evtName = evtNamePrefix + "replaced";
+
+    //emit to knot listeners
+    if(isBoth) knot.__privateEmitter.emit(evtName , mappedKnot)
+    
+    //emit to root listenters
+    const rootEmiter = this.findRoot().__privateEmitter;
+    if (!!rootEmiter)  rootEmiter.emit(evtName, mappedKnot);
   }
   //remove current knot from parent's knots
   //do not throw errors
