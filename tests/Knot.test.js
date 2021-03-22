@@ -415,13 +415,22 @@ describe("knot CLASS",()=>{
 			root = new Knot("root");
 			root.tie(new Knot("lvl1"))
 			root.tie(new Knot("lvl2"))
+			
 			root.lvl1.tie(new Knot("_state",{stateful:true}))
 			root.lvl1._state.tie(new Knot("name",{valuable:true}))
+
+			root.lvl2.tie(new Knot("name2",{valuable:true}))
+
+			root.tie(new Knot("_state",{stateful:true}));
+			root._state.tie(new Knot("name3",{valuable:true}))
 		});
 
 		it("should return the stateful knot when called from a valuable knot",()=>{
-			expect(root.lvl1._state.name.findStateRoot()).not.toBeNull();
 			expect(root.lvl1._state.name.findStateRoot()).toHaveProperty("KEY","_state")
+			expect(root._state.name3.findStateRoot()).toHaveProperty("KEY","_state")
+		})
+		it("should return null when called from a valuable knot that does not have a stateful root",()=>{
+			expect(root.lvl2.name2.findStateRoot()).toBeNull()
 		})
 	})
 })

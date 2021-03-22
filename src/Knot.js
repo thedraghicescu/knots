@@ -33,6 +33,26 @@ const generateKnotIndexer = function (context) {
 
       return context.knots.has(propKey) ? context.knots.get(propKey) : null;
     },
+    set(target,prop,value){
+      if (prop in target && prop!=="value")  {
+        target[prop] = value;
+        return true;
+      }
+      
+      if(target.hasOwnProperty("value") ){
+        //console.log("we can set:" + prop + " to " + value)
+        const cached = target.value;
+        target[prop] = value;
+        if(cached!==value){
+          const emiter = target.findRoot().__privateEmitter;
+          if (!!emiter) emiter.emit("knot_updated", target,cached);
+        }
+        
+        
+      }
+      
+      return true;
+    }
   });
 };
 
