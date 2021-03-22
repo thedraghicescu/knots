@@ -409,4 +409,19 @@ describe("knot CLASS",()=>{
 		})
 		
 	})
+	describe("findStateRoot",()=>{
+		let root;
+		beforeEach(()=>{
+			root = new Knot("root");
+			root.tie(new Knot("lvl1"))
+			root.tie(new Knot("lvl2"))
+			root.lvl1.tie(new Knot("_state",{stateful:true}))
+			root.lvl1._state.tie(new Knot("name",{valuable:true}))
+		});
+
+		it("should return the stateful knot when called from a valuable knot",()=>{
+			expect(root.lvl1._state.name.findStateRoot()).not.toBeNull();
+			expect(root.lvl1._state.name.findStateRoot()).toHaveProperty("KEY","_state")
+		})
+	})
 })

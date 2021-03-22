@@ -40,6 +40,7 @@ const defaults = {
   eventful: false,
   stateful: false,
   cachable: false,
+  valuable:false
 };
 
 class Knot {
@@ -62,7 +63,10 @@ class Knot {
       this.__privateEmitter = new EventEmitter();
     }
     if (config.stateful) {
-      this.__privateState = {};
+      this.__stateful = true;
+    }
+    if(config.valuable){
+      this.value = null;
     }
     //if serve as root we need to create eventhandlers
 
@@ -141,6 +145,11 @@ class Knot {
   findRoot() {
     if (this.isRoot) return this;
     return this.parent.findRoot();
+  }
+  findStateRoot(){
+    if(this.__stateful) return this;
+    if(this.parent!=null) return this.parent.findStateRoot();
+    return null;
   }
 
   getPath() {
