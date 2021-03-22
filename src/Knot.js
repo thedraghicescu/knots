@@ -219,7 +219,7 @@ class Knot {
 
     this.parent.knots.delete(this.KEY);
   }
-  untieAll() {
+  cutAll() {
     const emiter = this.findRoot().__privateEmitter;
     if (!!emiter) emiter.emit("all_knots_untied", this.getPath());
     this.knots.clear();
