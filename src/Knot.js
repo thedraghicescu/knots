@@ -44,8 +44,11 @@ const generateKnotIndexer = function (context) {
         const cached = target.value;
         target[prop] = value;
         if(cached!==value){
-          const emiter = target.findRoot().__privateEmitter;
-          if (!!emiter) emiter.emit("knot_updated", target,cached);
+          const stateEmitter = target.findStateRoot().__privateEmitter;
+          if(!!stateEmitter) stateEmitter.emit("value_updated", target,cached);
+
+          const rootEmitter = target.findRoot().__privateEmitter;
+          if (!!rootEmitter) rootEmitter.emit("value_updated", target,cached);
         }
         
         
