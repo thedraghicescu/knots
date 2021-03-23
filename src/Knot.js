@@ -43,14 +43,10 @@ const generateKnotIndexer = function (context) {
       if(target.isValuable ){
         const cached = target.value;
         target[prop] = value;
-        if(cached!==value){
-          const stateRoot = target.findStateRoot()
-          const stateEmitter = stateRoot != null ? stateRoot.__privateEmitter : null;
-          if(!!stateEmitter) stateEmitter.emit("value_updated", target,cached);
 
-          const rootEmitter = target.findRoot().__privateEmitter;
-          if (!!rootEmitter) rootEmitter.emit("value_updated", target,cached);
-        }
+        if(cached!==value)
+        target.__recursiveEmit("value_replaced",[target,cached])
+       
       }
     
       return true;
@@ -61,7 +57,8 @@ const generateKnotIndexer = function (context) {
 const defaults = {
   eventful: false,
   stateful: false,
-  valuable:false
+  valuable:false,
+  defaultValue:null
 };
 
 class Knot {
@@ -87,7 +84,7 @@ class Knot {
       this.__stateful = true;
     }
     if(config.valuable){
-      this.value = config.value!=null ? config.value : null;
+      this.value = config.defaultValue;
     }
     //if serve as root we need to create eventhandlers
 
@@ -155,9 +152,9 @@ class Knot {
     
     knot.parent = this;
     this.knots.set(knotKey, knot);
+    const mappedKnot = this.knots.get(knotKey)
 
-    const emiter = this.findRoot().__privateEmitter;
-    if (!!emiter) emiter.emit("knot_tied", this.knots.get(knotKey));
+    this.__recursiveEmit("knot_tied",[mappedKnot])
   }
   
   replace(knot){
@@ -179,44 +176,28 @@ class Knot {
     if(previousKnot.isEventful)
     knot.__privateEmitter = previousKnot.__privateEmitter;
 
-    const isStateful = knot.isStateful;
-    const isEventful = knot.isEventful;
-    const isBoth = (isStateful && isEventful)
 
-    let evtNamePrefix = isStateful ? "state_" : "knot_";
+    this.__recursiveEmit("knot_replacing",[knot])
 
-    //fire pre replacing event
-    if(isBoth) knot.__privateEmitter.emit(evtNamePrefix + "replacing" , knot)
-
-    //replace the knot inside the map
     knot.parent=this;
     this.knots.set(knotKey, knot);
 
     // get the one from the map to allow GC
     const mappedKnot = this.knots.get(knotKey);
 
-    const evtName = evtNamePrefix + "replaced";
-
-    //emit to knot listeners
-    if(isBoth) knot.__privateEmitter.emit(evtName , mappedKnot)
+    this.__recursiveEmit("knot_replaced",[mappedKnot])
     
-    //emit to root listenters
-    const rootEmiter = this.findRoot().__privateEmitter;
-    if (!!rootEmiter)  rootEmiter.emit(evtName, mappedKnot);
   }
-  //remove current knot from parent's knots
   
   cut() {
     if (this.isRoot) throw new Error("Can't use pop on a root knot!");
 
-    const emiter = this.findRoot().__privateEmitter;
-    if (!!emiter) emiter.emit("knot_cut", this);
+    this.__recursiveEmit("knot_cut",[this])
 
     this.parent.knots.delete(this.KEY);
   }
   cutAll() {
-    const emiter = this.findRoot().__privateEmitter;
-    if (!!emiter) emiter.emit("knots_cut", this.getPath());
+    this.__recursiveEmit("knots_cut",[this.getPath()])
     this.knots.clear();
   }
 
@@ -228,6 +209,17 @@ class Knot {
     if(this.isStateful) return this;
     if(this.parent!=null) return this.parent.findStateRoot();
     return null;
+  }
+
+  __recursiveEmit(eventName,payload){
+    if(this.isEventful){
+      this.__privateEmitter.emit(eventName,...payload);
+    }
+
+    if(this.parent!=null)
+    this.parent.__recursiveEmit(eventName,payload);
+
+    return;
   }
 
   getPath() {
