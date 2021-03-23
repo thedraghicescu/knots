@@ -490,6 +490,7 @@ describe("knot CLASS",()=>{
 		let knot_cut =null;
 		let knots_cut =null;
 		let value_replaced =null;
+		let knot_replacing =null;
 		let knot_replaced =null;
 		let state_replaced =null;
 		
@@ -498,6 +499,7 @@ describe("knot CLASS",()=>{
 			knot_cut =jest.fn()
 			knots_cut =jest.fn()
 			value_replaced =jest.fn();
+			knot_replacing =jest.fn();
 			knot_replaced =jest.fn();
 			state_replaced =jest.fn();
 			root = new Knot("root",{eventful:true})
@@ -505,6 +507,7 @@ describe("knot CLASS",()=>{
 			root.events.on("knot_cut",knot_cut)
 			root.events.on("knots_cut",knots_cut)
 			root.events.on("value_replaced",value_replaced)
+			root.events.on("knot_replacing",knot_replacing)
 			root.events.on("knot_replaced",knot_replaced)
 			root.events.on("state_replaced",state_replaced)
 
@@ -546,11 +549,19 @@ describe("knot CLASS",()=>{
 			root.name.value = "hi2";
 			expect(value_replaced).toHaveBeenCalledWith(expect.objectContaining({ KEY:"name" }),expect.stringContaining("hi"))
 		})
-		it("should fire only state_replace when a knot is replaced inside a stateful knot",()=>{
+		it("should fire only knot_replaced when a knot is replaced",()=>{
 			root.tie(new Knot("_state",{eventful:true}))
 			root.replace(new Knot("_state",{eventful:true}))
 
 			expect(knot_replaced).toHaveBeenCalledTimes(1);
+			expect(knot_replaced).toHaveBeenCalledWith(root._state)
+		})
+		it("should fire only knot_replacing when a knot is about to be replaced",()=>{
+			root.tie(new Knot("_state",{eventful:true}))
+			root.replace(new Knot("_state",{eventful:true}))
+
+			expect(knot_replacing).toHaveBeenCalledTimes(1);
+			expect(knot_replacing).toHaveBeenCalledWith(root._state)
 			expect(knot_replaced).toHaveBeenCalledWith(root._state)
 		})
 	})
